@@ -1,3 +1,7 @@
+const express = require('express');
+const app = express();
+app.use(express.json());
+
 const fs = require('fs');
 
 // Ruta donde se va a crear el archivo temporal
@@ -22,11 +26,11 @@ admin.initializeApp({
   // databaseURL: "..." si aplica
 });
 
-// Si estás usando Firestore, también asegúrate de instanciarlo
+// Firestore
 const db = admin.firestore();
 const productosCollection = db.collection('productos');
 
-
+// Rutas
 app.get('/inventory', async (req, res) => {
   try {
     const snapshot = await productosCollection.get();
@@ -72,6 +76,7 @@ app.delete('/inventory/:id', async (req, res) => {
   }
 });
 
+// Escuchar en el puerto
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en http://localhost:${PORT}`);
