@@ -64,22 +64,45 @@ app.put('/inventory/:id', async (req, res) => {
     const { id } = req.params;
     const { cantidad } = req.body;
 
-    await productosCollection.doc(id).update({ cantidad });
+    if (typeof cantidad !== 'number') {
+      return res.status(400).json({ error: 'Cantidad inválida' });
+    }
+
+    const docRef = productosCollection.doc(id);
+    const doc = await docRef.get();
+
+    if (!doc.exists) {
+      return res.status(404).json({ error: 'Producto no encontrado' });
+    }
+
+    await docRef.update({ cantidad });
     res.json({ message: 'Cantidad actualizada correctamente' });
   } catch (error) {
+    console.error('Error en PUT /inventory/:id:', error);
     res.status(500).json({ error: 'Error al actualizar la cantidad' });
   }
 });
 
+
 app.delete('/inventory/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    await productosCollection.doc(id).delete();
+
+    const docRef = productosCollection.doc(id);
+    const doc = await docRef.get();
+
+    if (!doc.exists) {
+      return res.status(404).json({ error: 'Producto no encontrado' });
+    }
+
+    await docRef.delete();
     res.json({ message: 'Producto eliminado correctamente' });
   } catch (error) {
+    console.error('Error en DELETE /inventory/:id:', error);
     res.status(500).json({ error: 'Error al eliminar el producto' });
   }
 });
+
 
 // Escuchar en el puerto
 const PORT = process.env.PORT || 3000;
