@@ -1,0 +1,11 @@
+# Ignora la carpeta de dependencias
+node_modules/
+
+# Ignora el archivo de variables de entorno
+.env
+
+# Ignora las credenciales de Firebase
+firebaseKey.json
+
+# Otros archivos opcionales que podrías querer ignorar
+.DS_Store
