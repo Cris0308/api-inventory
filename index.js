@@ -31,6 +31,11 @@ const db = admin.firestore();
 const productosCollection = db.collection('productos');
 
 // Rutas
+
+app.get('/', (req, res) => {
+  res.send('API Inventory está funcionando');
+});
+
 app.get('/inventory', async (req, res) => {
   try {
     const snapshot = await productosCollection.get();
