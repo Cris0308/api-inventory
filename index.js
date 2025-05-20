@@ -1,34 +1,31 @@
-const express = require('express');
-const admin = require('firebase-admin');
-require('dotenv').config();
+const fs = require('fs');
 
-// Construye el objeto desde variables individuales
-const serviceAccount = {
-  type: process.env.FB_TYPE,
-  project_id: process.env.FB_PROJECT_ID,
-  private_key_id: process.env.FB_PRIVATE_KEY_ID,
-private_key: process.env.FB_PRIVATE_KEY.replace(/\\n/g, '\n'),
-  client_email: process.env.FB_CLIENT_EMAIL,
-  client_id: process.env.FB_CLIENT_ID,
-  auth_uri: process.env.FB_AUTH_URI,
-  token_uri: process.env.FB_TOKEN_URI,
-  auth_provider_x509_cert_url: process.env.FB_AUTH_PROVIDER_CERT_URL,
-  client_x509_cert_url: process.env.FB_CLIENT_CERT_URL,
-};
+// Ruta donde se va a crear el archivo temporal
+const firebaseKeyPath = './firebaseKey.json';
 
-// Inicializa Firebase
+// Leer la variable de entorno codificada en base64
+const firebaseKeyBase64 = process.env.FIREBASE_KEY_BASE64;
+
+// Crear el archivo desde base64 (solo si no existe)
+if (firebaseKeyBase64 && !fs.existsSync(firebaseKeyPath)) {
+  const decoded = Buffer.from(firebaseKeyBase64, 'base64').toString('utf-8');
+  fs.writeFileSync(firebaseKeyPath, decoded);
+}
+
+// Ahora sí, ya existe el archivo: podemos importarlo
+const admin = require("firebase-admin");
+const serviceAccount = require(firebaseKeyPath);
+
+// Inicializamos Firebase
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  projectId: process.env.FB_PROJECT_ID
+  // databaseURL: "..." si aplica
 });
 
+// Si estás usando Firestore, también asegúrate de instanciarlo
 const db = admin.firestore();
-
-// Express setup
-const app = express();
-app.use(express.json());
-
 const productosCollection = db.collection('productos');
+
 
 app.get('/inventory', async (req, res) => {
   try {
