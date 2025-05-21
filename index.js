@@ -40,24 +40,23 @@ app.get('/inventory', async (req, res) => {
   }
 });
 
-// POST: Agregar producto con ID personalizado
 app.post('/inventory', async (req, res) => {
   try {
     const nuevoProducto = req.body;
+    console.log('📦 Producto recibido:', nuevoProducto);
 
-    if (!nuevoProducto.id) {
-      return res.status(400).json({ error: 'El producto debe incluir un campo "id"' });
-    }
+    // Firestore generará automáticamente un ID
+    const docRef = await productosCollection.add(nuevoProducto);
 
-    const docRef = productosCollection.doc(nuevoProducto.id);
-    await docRef.set(nuevoProducto);
-
-    res.status(201).json({ message: 'Producto agregado correctamente', ...nuevoProducto });
+    console.log('✅ Producto agregado correctamente con ID:', docRef.id);
+    res.status(201).json({ message: 'Producto agregado correctamente', id: docRef.id, ...nuevoProducto });
   } catch (error) {
-    console.error('Error al agregar producto:', error);
+    console.error('🔥 Error al agregar producto:', error);
     res.status(500).json({ error: 'Error al agregar el producto' });
   }
 });
+
+
 
 // PUT: Actualizar cantidad usando el ID personalizado
 app.put('/inventory/:id', async (req, res) => {
