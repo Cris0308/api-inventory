@@ -3,30 +3,21 @@ const app = express();
 app.use(express.json());
 
 const fs = require('fs');
-
-// Ruta donde se va a crear el archivo temporal
 const firebaseKeyPath = './firebaseKey.json';
-
-// Leer la variable de entorno codificada en base64
 const firebaseKeyBase64 = process.env.FIREBASE_KEY_BASE64;
 
-// Crear el archivo desde base64 (solo si no existe)
 if (firebaseKeyBase64 && !fs.existsSync(firebaseKeyPath)) {
   const decoded = Buffer.from(firebaseKeyBase64, 'base64').toString('utf-8');
   fs.writeFileSync(firebaseKeyPath, decoded);
 }
 
-// Ahora sí, ya existe el archivo: podemos importarlo
 const admin = require("firebase-admin");
 const serviceAccount = require(firebaseKeyPath);
 
-// Inicializamos Firebase
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  // databaseURL: "..." si aplica
 });
 
-// Firestore
 const db = admin.firestore();
 const productosCollection = db.collection('productos');
 
@@ -49,24 +40,30 @@ app.get('/inventory', async (req, res) => {
   }
 });
 
+// POST: Agregar producto con ID personalizado
 app.post('/inventory', async (req, res) => {
   try {
     const nuevoProducto = req.body;
-    const docRef = await productosCollection.add(nuevoProducto);
-    res.status(201).json({ id: docRef.id, ...nuevoProducto });
+
+    if (!nuevoProducto.id) {
+      return res.status(400).json({ error: 'El producto debe incluir un campo "id"' });
+    }
+
+    const docRef = productosCollection.doc(nuevoProducto.id);
+    await docRef.set(nuevoProducto);
+
+    res.status(201).json({ message: 'Producto agregado correctamente', ...nuevoProducto });
   } catch (error) {
+    console.error('Error al agregar producto:', error);
     res.status(500).json({ error: 'Error al agregar el producto' });
   }
 });
 
+// PUT: Actualizar cantidad usando el ID personalizado
 app.put('/inventory/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { cantidad } = req.body;
-
-    if (typeof cantidad !== 'number') {
-      return res.status(400).json({ error: 'Cantidad inválida' });
-    }
 
     const docRef = productosCollection.doc(id);
     const doc = await docRef.get();
@@ -78,12 +75,11 @@ app.put('/inventory/:id', async (req, res) => {
     await docRef.update({ cantidad });
     res.json({ message: 'Cantidad actualizada correctamente' });
   } catch (error) {
-    console.error('Error en PUT /inventory/:id:', error);
     res.status(500).json({ error: 'Error al actualizar la cantidad' });
   }
 });
 
-
+// DELETE: Eliminar producto por ID personalizado
 app.delete('/inventory/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -98,11 +94,9 @@ app.delete('/inventory/:id', async (req, res) => {
     await docRef.delete();
     res.json({ message: 'Producto eliminado correctamente' });
   } catch (error) {
-    console.error('Error en DELETE /inventory/:id:', error);
     res.status(500).json({ error: 'Error al eliminar el producto' });
   }
 });
-
 
 // Escuchar en el puerto
 const PORT = process.env.PORT || 3000;
